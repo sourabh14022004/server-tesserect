@@ -130,7 +130,7 @@ app.post('/api/auth/github', async (req, res) => {
 // Handle OAuth callback
 app.get('/login', (req, res) => {
   const { code, error } = req.query;
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const frontendUrl = process.env.FRONTEND_URL || 'https://tesseract-indol.vercel.app';
   
   if (error) {
     console.log('OAuth error:', error);
@@ -174,7 +174,56 @@ app.get('*', (req, res) => {
     return res.status(404).json({ error: 'API endpoint not found' });
   }
   
-  // Redirect all other routes to React app
+  // For production (Vercel), serve a simple page instead of redirecting
+  if (process.env.NODE_ENV === 'production' || req.hostname.includes('vercel.app')) {
+    return res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>GitHub OAuth Server</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            h1 { color: #333; }
+            .endpoint { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 4px; border-left: 4px solid #007bff; }
+            .method { color: #007bff; font-weight: bold; }
+            .url { color: #28a745; font-family: monospace; }
+            .description { color: #666; margin-top: 5px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>🚀 GitHub OAuth Server</h1>
+            <p>This server handles GitHub OAuth authentication. Available endpoints:</p>
+            
+            <div class="endpoint">
+              <span class="method">POST</span> <span class="url">/api/auth/github</span>
+              <div class="description">Exchange authorization code for access token</div>
+            </div>
+            
+            <div class="endpoint">
+              <span class="method">GET</span> <span class="url">/login</span>
+              <div class="description">OAuth callback handler</div>
+            </div>
+            
+            <div class="endpoint">
+              <span class="method">GET</span> <span class="url">/api/health</span>
+              <div class="description">Health check endpoint</div>
+            </div>
+            
+            <div class="endpoint">
+              <span class="method">GET</span> <span class="url">/api/test-oauth</span>
+              <div class="description">OAuth configuration test</div>
+            </div>
+            
+            <p><strong>Status:</strong> Server is running and ready to handle OAuth requests!</p>
+          </div>
+        </body>
+      </html>
+    `);
+  }
+  
+  // For development, redirect to React app
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   res.redirect(frontendUrl + req.path);
 });
