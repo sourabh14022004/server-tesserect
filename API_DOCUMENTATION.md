@@ -151,7 +151,148 @@ curl http://localhost:3001/api/test-oauth
 
 ---
 
-### 5. Frontend Redirect (Catch-all)
+### 5. Get User Repositories
+
+**Endpoint:** `GET /api/github/user/repos`
+
+**Description:** Fetches the authenticated user's repositories from GitHub.
+
+**Request Headers:**
+```
+Authorization: Bearer <github-access-token>
+```
+
+**Query Parameters:**
+- `sort` (string, optional): Sort repositories by `created`, `updated`, `pushed`, `full_name`. Default: `updated`
+- `per_page` (number, optional): Number of repositories per page. Default: `100`
+
+**Success Response (200):**
+```json
+[
+  {
+    "id": 123456789,
+    "name": "repository-name",
+    "full_name": "username/repository-name",
+    "private": false,
+    "html_url": "https://github.com/username/repository-name",
+    "description": "Repository description",
+    "created_at": "2023-01-01T00:00:00Z",
+    "updated_at": "2023-12-01T00:00:00Z",
+    "pushed_at": "2023-12-01T00:00:00Z"
+  }
+]
+```
+
+**Error Responses:**
+
+**401 Unauthorized:**
+```json
+{
+  "error": "Authorization header required"
+}
+```
+
+**Example Request:**
+```bash
+curl -H "Authorization: Bearer gho_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
+  "http://localhost:3001/api/github/user/repos?sort=updated&per_page=100"
+```
+
+---
+
+### 6. Get Repository Details
+
+**Endpoint:** `GET /api/github/repos/:owner/:repo`
+
+**Description:** Fetches detailed information about a specific repository.
+
+**Request Headers:**
+```
+Authorization: Bearer <github-access-token>
+```
+
+**Path Parameters:**
+- `owner` (string, required): Repository owner username
+- `repo` (string, required): Repository name
+
+**Success Response (200):**
+```json
+{
+  "id": 123456789,
+  "name": "repository-name",
+  "full_name": "owner/repository-name",
+  "private": false,
+  "html_url": "https://github.com/owner/repository-name",
+  "description": "Repository description",
+  "created_at": "2023-01-01T00:00:00Z",
+  "updated_at": "2023-12-01T00:00:00Z",
+  "pushed_at": "2023-12-01T00:00:00Z",
+  "stargazers_count": 42,
+  "forks_count": 5,
+  "language": "JavaScript"
+}
+```
+
+**Error Responses:**
+
+**401 Unauthorized:**
+```json
+{
+  "error": "Authorization header required"
+}
+```
+
+**404 Not Found:**
+```json
+{
+  "error": "Failed to fetch repository",
+  "details": "GitHub API returned 404: Not Found"
+}
+```
+
+**Example Request:**
+```bash
+curl -H "Authorization: Bearer gho_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
+  "http://localhost:3001/api/github/repos/Shreyaa6/_tesseract-"
+```
+
+---
+
+### 7. Generic GitHub API Proxy
+
+**Endpoint:** `ALL /api/github/*`
+
+**Description:** Proxies any GitHub API request to the GitHub API. Supports all HTTP methods and endpoints.
+
+**Request Headers:**
+```
+Authorization: Bearer <github-access-token>
+Content-Type: application/json (for non-GET requests)
+```
+
+**Usage:** Replace `https://api.github.com` with your server URL in any GitHub API call.
+
+**Example Requests:**
+```bash
+# Get user profile
+curl -H "Authorization: Bearer gho_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
+  "http://localhost:3001/api/github/user"
+
+# Get repository issues
+curl -H "Authorization: Bearer gho_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
+  "http://localhost:3001/api/github/repos/owner/repo/issues"
+
+# Create a new issue (POST)
+curl -X POST \
+  -H "Authorization: Bearer gho_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"New Issue","body":"Issue description"}' \
+  "http://localhost:3001/api/github/repos/owner/repo/issues"
+```
+
+---
+
+### 8. Frontend Redirect (Catch-all)
 
 **Endpoint:** `GET /*`
 

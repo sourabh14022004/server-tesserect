@@ -167,6 +167,132 @@ app.get('/api/test-oauth', (req, res) => {
   });
 });
 
+// GitHub API proxy endpoints
+app.get('/api/github/user/repos', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization header required' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { sort = 'updated', per_page = 100 } = req.query;
+
+    console.log('Fetching user repositories...');
+    
+    const response = await fetch(`https://api.github.com/user/repos?sort=${sort}&per_page=${per_page}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'GitHub-OAuth-Server'
+      }
+    });
+
+    if (!response.ok) {
+      console.log('GitHub API error:', response.status, response.statusText);
+      return res.status(response.status).json({ 
+        error: 'Failed to fetch repositories',
+        details: `GitHub API returned ${response.status}: ${response.statusText}`
+      });
+    }
+
+    const data = await response.json();
+    console.log(`Successfully fetched ${data.length} repositories`);
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching user repositories:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
+  }
+});
+
+app.get('/api/github/repos/:owner/:repo', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization header required' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { owner, repo } = req.params;
+
+    console.log(`Fetching repository: ${owner}/${repo}`);
+    
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'GitHub-OAuth-Server'
+      }
+    });
+
+    if (!response.ok) {
+      console.log('GitHub API error:', response.status, response.statusText);
+      return res.status(response.status).json({ 
+        error: 'Failed to fetch repository',
+        details: `GitHub API returned ${response.status}: ${response.statusText}`
+      });
+    }
+
+    const data = await response.json();
+    console.log(`Successfully fetched repository: ${owner}/${repo}`);
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching repository:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
+  }
+});
+
+// Generic GitHub API proxy for other endpoints
+app.all('/api/github/*', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization header required' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const githubPath = req.path.replace('/api/github', '');
+    const githubUrl = `https://api.github.com${githubPath}`;
+
+    console.log(`Proxying ${req.method} request to: ${githubUrl}`);
+    
+    const response = await fetch(githubUrl, {
+      method: req.method,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'GitHub-OAuth-Server',
+        'Content-Type': 'application/json'
+      },
+      body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined
+    });
+
+    if (!response.ok) {
+      console.log('GitHub API error:', response.status, response.statusText);
+      return res.status(response.status).json({ 
+        error: 'GitHub API request failed',
+        details: `GitHub API returned ${response.status}: ${response.statusText}`
+      });
+    }
+
+    const data = await response.json();
+    console.log(`Successfully proxied ${req.method} request to GitHub API`);
+    res.json(data);
+  } catch (error) {
+    console.error('Error proxying GitHub API request:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
+  }
+});
+
 // Serve React app for all other routes (excluding API routes)
 app.get('*', (req, res) => {
   // Don't redirect API routes
